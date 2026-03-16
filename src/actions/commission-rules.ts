@@ -24,6 +24,7 @@ export async function createCommissionRule(formData: FormData) {
   });
 
   await db.insert(commissionRules).values({
+    title: parsed.title || null,
     type: parsed.type,
     tierMin: String(parsed.tierMin),
     tierMax: parsed.tierMax !== null ? String(parsed.tierMax) : null,
@@ -45,6 +46,7 @@ export async function updateCommissionRule(id: string, formData: FormData) {
   await db
     .update(commissionRules)
     .set({
+      title: parsed.title || null,
       type: parsed.type,
       tierMin: String(parsed.tierMin),
       tierMax: parsed.tierMax !== null ? String(parsed.tierMax) : null,

@@ -40,6 +40,7 @@ export const contractSchema = z.object({
 });
 
 export const commissionRuleSchema = z.object({
+  title: z.string().optional(),
   type: z.enum(["gross_profit", "stock", "cross_sell", "company_profit"]),
   tierMin: z.coerce.number().min(0),
   tierMax: z.coerce.number().nullable(),

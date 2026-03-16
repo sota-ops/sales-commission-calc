@@ -37,6 +37,7 @@ import { toast } from "sonner";
 
 type Rule = {
   id: string;
+  title: string | null;
   type: "gross_profit" | "stock" | "cross_sell" | "company_profit";
   tierMin: string;
   tierMax: string | null;
@@ -124,7 +125,11 @@ export function SettingsClient({
               </CardHeader>
               <CardContent>
                 <form action={handleAddRule} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>タイトル</Label>
+                      <Input name="title" placeholder="ルール名" />
+                    </div>
                     <div className="space-y-2">
                       <Label>タイプ</Label>
                       <Select name="type" defaultValue="gross_profit">
@@ -139,6 +144,8 @@ export function SettingsClient({
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+                  <div className="grid grid-cols-4 gap-4">
                     <div className="space-y-2">
                       <Label>レート</Label>
                       <Input
@@ -149,8 +156,6 @@ export function SettingsClient({
                         required
                       />
                     </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label>ティア下限</Label>
                       <Input
@@ -196,6 +201,7 @@ export function SettingsClient({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>タイトル</TableHead>
                 <TableHead>タイプ</TableHead>
                 <TableHead>ティア範囲</TableHead>
                 <TableHead>レート</TableHead>
@@ -207,6 +213,9 @@ export function SettingsClient({
             <TableBody>
               {activeRules.map((rule) => (
                 <TableRow key={rule.id}>
+                  <TableCell className="font-medium">
+                    {rule.title ?? "-"}
+                  </TableCell>
                   <TableCell>
                     <Badge>{typeLabels[rule.type]}</Badge>
                   </TableCell>
@@ -237,7 +246,7 @@ export function SettingsClient({
               {activeRules.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={7}
                     className="text-center text-muted-foreground"
                   >
                     ルールがありません

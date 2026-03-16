@@ -121,6 +121,7 @@ export const contracts = pgTable("contracts", {
 // ── Commission Rules ───────────────────────────────
 export const commissionRules = pgTable("commission_rules", {
   id: uuid("id").defaultRandom().primaryKey(),
+  title: text("title"),
   type: commissionTypeEnum("type").notNull(),
   tierMin: numeric("tier_min", { precision: 12, scale: 2 })
     .default("0")
