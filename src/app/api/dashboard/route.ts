@@ -1,64 +1,14 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { salesMembers, contracts, monthlyCommissions } from "@/db/schema";
-import { eq, desc, gte, and } from "drizzle-orm";
-
-function getStartMonth(period: string): string {
-  const now = new Date();
-  let monthsBack = 1;
-  switch (period) {
-    case "1m":
-      monthsBack = 1;
-      break;
-    case "3m":
-      monthsBack = 3;
-      break;
-    case "6m":
-      monthsBack = 6;
-      break;
-    case "1y":
-      monthsBack = 12;
-      break;
-    default:
-      monthsBack = 1;
-  }
-
-  const start = new Date(now.getFullYear(), now.getMonth() - monthsBack + 1, 1);
-  const y = start.getFullYear();
-  const m = String(start.getMonth() + 1).padStart(2, "0");
-  return `${y}-${m}`;
-}
-
-function getContractStartDate(period: string): string {
-  const now = new Date();
-  let monthsBack = 1;
-  switch (period) {
-    case "1m":
-      monthsBack = 1;
-      break;
-    case "3m":
-      monthsBack = 3;
-      break;
-    case "6m":
-      monthsBack = 6;
-      break;
-    case "1y":
-      monthsBack = 12;
-      break;
-    default:
-      monthsBack = 1;
-  }
-  const start = new Date(now.getFullYear(), now.getMonth() - monthsBack + 1, 1);
-  return start.toISOString().slice(0, 10);
-}
+import { eq, desc, and } from "drizzle-orm";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const period = searchParams.get("period") ?? "1m";
-
-    const startMonth = getStartMonth(period);
-    const contractStart = getContractStartDate(period);
+    const now = new Date();
+    const defaultYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const yearMonth = searchParams.get("yearMonth") ?? defaultYearMonth;
 
     const members = await db.query.salesMembers.findMany({
       where: eq(salesMembers.isActive, true),
@@ -68,42 +18,51 @@ export async function GET(request: Request) {
       where: eq(contracts.status, "active"),
     });
 
-    // Filter contracts by period for ranking
-    const periodContracts = activeContracts.filter(
-      (c) => c.contractDate >= contractStart
+    // Filter contracts by yearMonth (contract_date starts with yearMonth)
+    const monthContracts = activeContracts.filter(
+      (c) => c.contractDate.startsWith(yearMonth)
     );
 
-    const periodCommissions = await db.query.monthlyCommissions.findMany({
-      where: gte(monthlyCommissions.yearMonth, startMonth),
+    // Get commissions for the selected month
+    const monthCommissions = await db.query.monthlyCommissions.findMany({
+      where: eq(monthlyCommissions.yearMonth, yearMonth),
+      orderBy: [desc(monthlyCommissions.totalCompensation)],
+    });
+
+    // Get all commissions for trend (last 6 months from selected month)
+    const allCommissions = await db.query.monthlyCommissions.findMany({
       orderBy: [desc(monthlyCommissions.yearMonth)],
     });
 
-    // Group by month for trend
+    // Build 6-month trend ending at the selected month
     const monthMap = new Map<string, number>();
-    for (const c of periodCommissions) {
-      const current = monthMap.get(c.yearMonth) ?? 0;
-      monthMap.set(c.yearMonth, current + Number(c.totalCompensation));
+    for (const c of allCommissions) {
+      if (c.yearMonth <= yearMonth) {
+        const current = monthMap.get(c.yearMonth) ?? 0;
+        monthMap.set(c.yearMonth, current + Number(c.totalCompensation));
+      }
     }
 
     const monthlyTrend = Array.from(monthMap.entries())
       .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-6)
       .map(([month, total]) => ({ month, total }));
 
-    // Breakdown aggregated over the period
+    // Breakdown for selected month
     const breakdown = {
-      grossProfit: periodCommissions.reduce(
+      grossProfit: monthCommissions.reduce(
         (s, c) => s + Number(c.grossProfitIncentive),
         0
       ),
-      stock: periodCommissions.reduce(
+      stock: monthCommissions.reduce(
         (s, c) => s + Number(c.stockIncentive),
         0
       ),
-      crossSell: periodCommissions.reduce(
+      crossSell: monthCommissions.reduce(
         (s, c) => s + Number(c.crossSellBonus),
         0
       ),
-      companyProfit: periodCommissions.reduce(
+      companyProfit: monthCommissions.reduce(
         (s, c) => s + Number(c.companyProfitBonus),
         0
       ),
@@ -116,14 +75,14 @@ export async function GET(request: Request) {
       { name: "会社利益", value: breakdown.companyProfit },
     ].filter((b) => b.value > 0);
 
-    const totalCommissions = periodCommissions.reduce(
+    const totalCommissions = monthCommissions.reduce(
       (s, c) => s + Number(c.totalCompensation),
       0
     );
 
-    // Per-member ranking — use period contracts for sales/profit, period commissions for commission
+    // Per-member ranking for selected month
     const memberRanking = members.map((member) => {
-      const memberContracts = periodContracts.filter(
+      const memberContracts = monthContracts.filter(
         (c) => c.memberId === member.id
       );
       const totalSales = memberContracts.reduce(
@@ -136,17 +95,13 @@ export async function GET(request: Request) {
       );
       const contractCount = memberContracts.length;
 
-      const memberCommissions = periodCommissions.filter(
+      const memberComm = monthCommissions.find(
         (c) => c.memberId === member.id
       );
-      const commission = memberCommissions.reduce(
-        (s, c) => s + Number(c.totalCompensation),
-        0
-      );
-
-      // Use latest month rank for display
-      const latestComm = memberCommissions[0];
-      const rank = latestComm?.rank ?? null;
+      const commission = memberComm
+        ? Number(memberComm.totalCompensation)
+        : 0;
+      const rank = memberComm?.rank ?? null;
 
       return {
         id: member.id,
@@ -161,14 +116,11 @@ export async function GET(request: Request) {
 
     memberRanking.sort((a, b) => b.commission - a.commission);
 
-    // Count contracts in period
-    const periodContractCount = periodContracts.length;
-
     return NextResponse.json({
       success: true,
       data: {
         memberCount: members.length,
-        contractCount: periodContractCount,
+        contractCount: monthContracts.length,
         totalCommissions,
         averageCompensation:
           members.length > 0

@@ -8,6 +8,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Users, FileText, Calculator, TrendingUp, Trophy, Crown, Medal } from "lucide-react";
 import {
   BarChart,
@@ -50,12 +52,10 @@ const COLORS = [
   "#032D60",
 ];
 
-const PERIODS = [
-  { value: "1m", label: "単月" },
-  { value: "3m", label: "3ヶ月" },
-  { value: "6m", label: "6ヶ月" },
-  { value: "1y", label: "1年" },
-] as const;
+function getCurrentYearMonth(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("ja-JP", {
@@ -83,13 +83,13 @@ const emptyStats: DashboardStats = {
 };
 
 export default function DashboardPage() {
-  const [period, setPeriod] = useState("1m");
+  const [yearMonth, setYearMonth] = useState(getCurrentYearMonth());
   const [stats, setStats] = useState<DashboardStats>(emptyStats);
   const [loading, setLoading] = useState(false);
 
-  const fetchData = useCallback((p: string) => {
+  const fetchData = useCallback((ym: string) => {
     setLoading(true);
-    fetch(`/api/dashboard?period=${p}`)
+    fetch(`/api/dashboard?yearMonth=${ym}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -105,8 +105,8 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    fetchData(period);
-  }, [period, fetchData]);
+    fetchData(yearMonth);
+  }, [yearMonth, fetchData]);
 
   const statCards = [
     {
@@ -140,21 +140,18 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gradient-sf">ダッシュボード</h2>
 
-        {/* Period Selector */}
-        <div className="flex items-center gap-1 rounded-xl border border-border/30 bg-card/50 p-1 backdrop-blur-sm">
-          {PERIODS.map((p) => (
-            <button
-              key={p.value}
-              onClick={() => setPeriod(p.value)}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 ${
-                period === p.value
-                  ? "bg-gradient-to-r from-[#0176D3] to-[#1B96FF] text-white shadow-lg shadow-[#0176D3]/20"
-                  : "text-muted-foreground hover:text-foreground hover:bg-[#0176D3]/10"
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
+        {/* Month Selector */}
+        <div className="flex items-center gap-2">
+          <Label htmlFor="dashboardMonth" className="text-sm text-muted-foreground">
+            対象月
+          </Label>
+          <Input
+            id="dashboardMonth"
+            type="month"
+            value={yearMonth}
+            onChange={(e) => setYearMonth(e.target.value)}
+            className="w-[180px] rounded-xl border-border/50 bg-card/50 backdrop-blur-sm"
+          />
         </div>
       </div>
 
@@ -194,7 +191,7 @@ export default function DashboardPage() {
               個人別ランキング
             </CardTitle>
             <CardDescription>
-              売上・利益・契約数・歩合報酬（{PERIODS.find((p) => p.value === period)?.label}）
+              {yearMonth} の売上・利益・契約数・歩合報酬
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -265,7 +262,7 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle className="text-gradient-sf">月別報酬推移</CardTitle>
               <CardDescription>
-                {PERIODS.find((p) => p.value === period)?.label}の報酬合計
+                {yearMonth} までの直近6ヶ月
               </CardDescription>
             </CardHeader>
             <CardContent className="h-[300px]">
@@ -309,7 +306,7 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle className="text-gradient-sf">報酬内訳</CardTitle>
               <CardDescription>
-                カテゴリ別の報酬配分（{PERIODS.find((p) => p.value === period)?.label}）
+                {yearMonth} のカテゴリ別報酬配分
               </CardDescription>
             </CardHeader>
             <CardContent className="h-[300px]">
