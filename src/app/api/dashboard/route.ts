@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { salesMembers, contracts, monthlyCommissions } from "@/db/schema";
-import { eq, sql, desc } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 export async function GET() {
   try {
@@ -63,6 +63,47 @@ export async function GET() {
 
     const totalCommissions = monthlyTrend.reduce((s, m) => s + m.total, 0);
 
+    // Per-member ranking data
+    const memberRanking = members.map((member) => {
+      const memberContracts = activeContracts.filter(
+        (c) => c.memberId === member.id
+      );
+      const totalSales = memberContracts.reduce(
+        (s, c) => s + Number(c.monthlyAmount),
+        0
+      );
+      const totalProfit = memberContracts.reduce(
+        (s, c) => s + Number(c.grossProfit),
+        0
+      );
+      const contractCount = memberContracts.length;
+
+      const memberLatest = latestCommissions.find(
+        (c) => c.memberId === member.id
+      );
+      const commission = memberLatest
+        ? Number(memberLatest.totalCompensation)
+        : 0;
+      const rank = memberLatest?.rank ?? null;
+
+      return {
+        id: member.id,
+        name: member.name,
+        totalSales,
+        totalProfit,
+        contractCount,
+        commission,
+        rank,
+      };
+    });
+
+    memberRanking.sort((a, b) => {
+      if (a.rank !== null && b.rank !== null) return a.rank - b.rank;
+      if (a.rank !== null) return -1;
+      if (b.rank !== null) return 1;
+      return b.commission - a.commission;
+    });
+
     return NextResponse.json({
       success: true,
       data: {
@@ -75,6 +116,7 @@ export async function GET() {
             : 0,
         monthlyTrend,
         commissionBreakdown,
+        memberRanking,
       },
     });
   } catch (error) {
@@ -88,6 +130,7 @@ export async function GET() {
           averageCompensation: 0,
           monthlyTrend: [],
           commissionBreakdown: [],
+          memberRanking: [],
         },
       },
       { status: 200 }

@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Users, FileText, Calculator, TrendingUp } from "lucide-react";
+import { Users, FileText, Calculator, TrendingUp, Trophy, Crown, Medal } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -22,6 +22,16 @@ import {
   Cell,
 } from "recharts";
 
+type MemberRanking = {
+  id: string;
+  name: string;
+  totalSales: number;
+  totalProfit: number;
+  contractCount: number;
+  commission: number;
+  rank: number | null;
+};
+
 type DashboardStats = {
   memberCount: number;
   contractCount: number;
@@ -29,6 +39,7 @@ type DashboardStats = {
   averageCompensation: number;
   monthlyTrend: { month: string; total: number }[];
   commissionBreakdown: { name: string; value: number }[];
+  memberRanking: MemberRanking[];
 };
 
 const COLORS = [
@@ -62,6 +73,7 @@ export default function DashboardPage() {
     averageCompensation: 0,
     monthlyTrend: [],
     commissionBreakdown: [],
+    memberRanking: [],
   });
 
   useEffect(() => {
@@ -134,6 +146,78 @@ export default function DashboardPage() {
           </Card>
         ))}
       </div>
+
+      {/* Member Ranking Table */}
+      <Card className="rounded-2xl border-border/30 glass-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-gradient-sf">
+            <Trophy className="h-5 w-5 text-[#1B96FF]" />
+            個人別ランキング
+          </CardTitle>
+          <CardDescription>売上・利益・契約数・歩合報酬</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {stats.memberRanking.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border/30">
+                    <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">順位</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">名前</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">売上</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">粗利</th>
+                    <th className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">契約数</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">歩合報酬</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.memberRanking.map((member, index) => (
+                    <tr
+                      key={member.id}
+                      className="border-b border-border/20 transition-colors hover:bg-[#0176D3]/5"
+                    >
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-1.5">
+                          {index === 0 ? (
+                            <Crown className="h-5 w-5 text-yellow-400" />
+                          ) : index === 1 ? (
+                            <Medal className="h-5 w-5 text-gray-300" />
+                          ) : index === 2 ? (
+                            <Medal className="h-5 w-5 text-amber-600" />
+                          ) : (
+                            <span className="ml-1 text-sm text-muted-foreground">{member.rank ?? index + 1}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className="font-medium">{member.name}</span>
+                      </td>
+                      <td className="px-3 py-3 text-right">
+                        <span className="text-sm">{formatCurrency(member.totalSales)}</span>
+                      </td>
+                      <td className="px-3 py-3 text-right">
+                        <span className="text-sm text-[#06A59A]">{formatCurrency(member.totalProfit)}</span>
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        <span className="inline-flex h-7 min-w-[2rem] items-center justify-center rounded-full bg-[#0176D3]/10 px-2 text-sm font-medium text-[#1B96FF]">
+                          {member.contractCount}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-right">
+                        <span className="font-semibold text-[#1B96FF]">{formatCurrency(member.commission)}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="flex h-32 items-center justify-center text-muted-foreground">
+              データがありません
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="rounded-2xl border-border/30 glass-card">
