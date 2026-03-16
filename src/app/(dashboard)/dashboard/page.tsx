@@ -83,13 +83,14 @@ const emptyStats: DashboardStats = {
 };
 
 export default function DashboardPage() {
-  const [yearMonth, setYearMonth] = useState(getCurrentYearMonth());
+  const [fromMonth, setFromMonth] = useState(getCurrentYearMonth());
+  const [toMonth, setToMonth] = useState(getCurrentYearMonth());
   const [stats, setStats] = useState<DashboardStats>(emptyStats);
   const [loading, setLoading] = useState(false);
 
-  const fetchData = useCallback((ym: string) => {
+  const fetchData = useCallback((from: string, to: string) => {
     setLoading(true);
-    fetch(`/api/dashboard?yearMonth=${ym}`)
+    fetch(`/api/dashboard?from=${from}&to=${to}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -105,8 +106,8 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    fetchData(yearMonth);
-  }, [yearMonth, fetchData]);
+    fetchData(fromMonth, toMonth);
+  }, [fromMonth, toMonth, fetchData]);
 
   const statCards = [
     {
@@ -140,17 +141,27 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gradient-sf">ダッシュボード</h2>
 
-        {/* Month Selector */}
+        {/* Month Range Selector */}
         <div className="flex items-center gap-2">
-          <Label htmlFor="dashboardMonth" className="text-sm text-muted-foreground">
-            対象月
-          </Label>
+          <Label className="text-sm text-muted-foreground">対象月</Label>
           <Input
-            id="dashboardMonth"
             type="month"
-            value={yearMonth}
-            onChange={(e) => setYearMonth(e.target.value)}
-            className="w-[180px] rounded-xl border-border/50 bg-card/50 backdrop-blur-sm"
+            value={fromMonth}
+            onChange={(e) => {
+              setFromMonth(e.target.value);
+              if (e.target.value > toMonth) setToMonth(e.target.value);
+            }}
+            className="w-[160px] rounded-xl border-border/50 bg-card/50 backdrop-blur-sm"
+          />
+          <span className="text-sm text-muted-foreground">〜</span>
+          <Input
+            type="month"
+            value={toMonth}
+            onChange={(e) => {
+              setToMonth(e.target.value);
+              if (e.target.value < fromMonth) setFromMonth(e.target.value);
+            }}
+            className="w-[160px] rounded-xl border-border/50 bg-card/50 backdrop-blur-sm"
           />
         </div>
       </div>
@@ -191,7 +202,7 @@ export default function DashboardPage() {
               個人別ランキング
             </CardTitle>
             <CardDescription>
-              {yearMonth} の売上・利益・契約数・歩合報酬
+              {fromMonth === toMonth ? fromMonth : `${fromMonth} 〜 ${toMonth}`} の売上・利益・契約数・歩合報酬
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -262,7 +273,7 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle className="text-gradient-sf">月別報酬推移</CardTitle>
               <CardDescription>
-                {yearMonth} までの直近6ヶ月
+                {fromMonth === toMonth ? fromMonth : `${fromMonth} 〜 ${toMonth}`} の月別推移
               </CardDescription>
             </CardHeader>
             <CardContent className="h-[300px]">
@@ -306,7 +317,7 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle className="text-gradient-sf">報酬内訳</CardTitle>
               <CardDescription>
-                {yearMonth} のカテゴリ別報酬配分
+                {fromMonth === toMonth ? fromMonth : `${fromMonth} 〜 ${toMonth}`} のカテゴリ別報酬配分
               </CardDescription>
             </CardHeader>
             <CardContent className="h-[300px]">

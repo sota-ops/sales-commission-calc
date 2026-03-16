@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { monthlyCommissions, monthlyCommissionDetails, contracts, salesMembers, commissionRules, companyProfitMonthly, products } from "@/db/schema";
-import { eq, and, like } from "drizzle-orm";
+import { eq, and, like, gte, lte } from "drizzle-orm";
 import { calculateMonthlyCompensation } from "@/lib/commissions";
 import type { ContractForCalc, MemberForCalc, CommissionRule, CompanyProfitForCalc } from "@/types";
 import { revalidatePath } from "next/cache";
@@ -136,5 +136,16 @@ export async function getMonthlyCommissions(yearMonth: string) {
     where: eq(monthlyCommissions.yearMonth, yearMonth),
     with: { member: true, details: true },
     orderBy: (mc, { asc }) => [asc(mc.rank)],
+  });
+}
+
+export async function getMonthlyCommissionsRange(from: string, to: string) {
+  return db.query.monthlyCommissions.findMany({
+    where: and(
+      gte(monthlyCommissions.yearMonth, from),
+      lte(monthlyCommissions.yearMonth, to)
+    ),
+    with: { member: true, details: true },
+    orderBy: (mc, { desc }) => [desc(mc.totalCompensation)],
   });
 }

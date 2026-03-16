@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { salesMembers, contracts, monthlyCommissions } from "@/db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, gte, lte, and } from "drizzle-orm";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const now = new Date();
     const defaultYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const yearMonth = searchParams.get("yearMonth") ?? defaultYearMonth;
+    const from = searchParams.get("from") ?? defaultYearMonth;
+    const to = searchParams.get("to") ?? defaultYearMonth;
 
     const members = await db.query.salesMembers.findMany({
       where: eq(salesMembers.isActive, true),
@@ -18,51 +19,47 @@ export async function GET(request: Request) {
       where: eq(contracts.status, "active"),
     });
 
-    // Filter contracts by yearMonth (contract_date starts with yearMonth)
-    const monthContracts = activeContracts.filter(
-      (c) => c.contractDate.startsWith(yearMonth)
-    );
-
-    // Get commissions for the selected month
-    const monthCommissions = await db.query.monthlyCommissions.findMany({
-      where: eq(monthlyCommissions.yearMonth, yearMonth),
-      orderBy: [desc(monthlyCommissions.totalCompensation)],
+    // Filter contracts within the date range (by contract_date month)
+    const rangeContracts = activeContracts.filter((c) => {
+      const contractMonth = c.contractDate.slice(0, 7);
+      return contractMonth >= from && contractMonth <= to;
     });
 
-    // Get all commissions for trend (last 6 months from selected month)
-    const allCommissions = await db.query.monthlyCommissions.findMany({
+    // Get commissions within range
+    const rangeCommissions = await db.query.monthlyCommissions.findMany({
+      where: and(
+        gte(monthlyCommissions.yearMonth, from),
+        lte(monthlyCommissions.yearMonth, to)
+      ),
       orderBy: [desc(monthlyCommissions.yearMonth)],
     });
 
-    // Build 6-month trend ending at the selected month
+    // Group by month for trend
     const monthMap = new Map<string, number>();
-    for (const c of allCommissions) {
-      if (c.yearMonth <= yearMonth) {
-        const current = monthMap.get(c.yearMonth) ?? 0;
-        monthMap.set(c.yearMonth, current + Number(c.totalCompensation));
-      }
+    for (const c of rangeCommissions) {
+      const current = monthMap.get(c.yearMonth) ?? 0;
+      monthMap.set(c.yearMonth, current + Number(c.totalCompensation));
     }
 
     const monthlyTrend = Array.from(monthMap.entries())
       .sort(([a], [b]) => a.localeCompare(b))
-      .slice(-6)
       .map(([month, total]) => ({ month, total }));
 
-    // Breakdown for selected month
+    // Breakdown aggregated over range
     const breakdown = {
-      grossProfit: monthCommissions.reduce(
+      grossProfit: rangeCommissions.reduce(
         (s, c) => s + Number(c.grossProfitIncentive),
         0
       ),
-      stock: monthCommissions.reduce(
+      stock: rangeCommissions.reduce(
         (s, c) => s + Number(c.stockIncentive),
         0
       ),
-      crossSell: monthCommissions.reduce(
+      crossSell: rangeCommissions.reduce(
         (s, c) => s + Number(c.crossSellBonus),
         0
       ),
-      companyProfit: monthCommissions.reduce(
+      companyProfit: rangeCommissions.reduce(
         (s, c) => s + Number(c.companyProfitBonus),
         0
       ),
@@ -75,14 +72,14 @@ export async function GET(request: Request) {
       { name: "会社利益", value: breakdown.companyProfit },
     ].filter((b) => b.value > 0);
 
-    const totalCommissions = monthCommissions.reduce(
+    const totalCommissions = rangeCommissions.reduce(
       (s, c) => s + Number(c.totalCompensation),
       0
     );
 
-    // Per-member ranking for selected month
+    // Per-member ranking aggregated over range
     const memberRanking = members.map((member) => {
-      const memberContracts = monthContracts.filter(
+      const memberContracts = rangeContracts.filter(
         (c) => c.memberId === member.id
       );
       const totalSales = memberContracts.reduce(
@@ -95,13 +92,13 @@ export async function GET(request: Request) {
       );
       const contractCount = memberContracts.length;
 
-      const memberComm = monthCommissions.find(
+      const memberComms = rangeCommissions.filter(
         (c) => c.memberId === member.id
       );
-      const commission = memberComm
-        ? Number(memberComm.totalCompensation)
-        : 0;
-      const rank = memberComm?.rank ?? null;
+      const commission = memberComms.reduce(
+        (s, c) => s + Number(c.totalCompensation),
+        0
+      );
 
       return {
         id: member.id,
@@ -110,7 +107,7 @@ export async function GET(request: Request) {
         totalProfit,
         contractCount,
         commission,
-        rank,
+        rank: null as number | null,
       };
     });
 
@@ -120,7 +117,7 @@ export async function GET(request: Request) {
       success: true,
       data: {
         memberCount: members.length,
-        contractCount: monthContracts.length,
+        contractCount: rangeContracts.length,
         totalCommissions,
         averageCompensation:
           members.length > 0
