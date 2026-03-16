@@ -10,6 +10,7 @@ function makeContract(overrides: Partial<ContractForCalc> = {}): ContractForCalc
     productId: "p1",
     status: "active",
     contractDate: "2026-01-01",
+    initialAmount: 0,
     monthlyAmount: 50000,
     grossProfit: 20000,
     isCrossSell: false,

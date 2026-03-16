@@ -52,6 +52,7 @@ export async function runMonthlyCalculation(yearMonth: string) {
     productId: c.productId,
     status: c.status,
     contractDate: c.contractDate,
+    initialAmount: Number(c.initialAmount),
     monthlyAmount: Number(c.monthlyAmount),
     grossProfit: Number(c.grossProfit),
     isCrossSell: c.isCrossSell,

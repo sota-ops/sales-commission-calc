@@ -24,19 +24,19 @@ const contracts: ContractForCalc[] = [
   {
     id: "c1", memberId: "m1", customerId: "cust1", productId: "p1",
     status: "active", contractDate: "2026-03-01",
-    monthlyAmount: 100000, grossProfit: 200000,
+    initialAmount: 0, monthlyAmount: 100000, grossProfit: 200000,
     isCrossSell: false, isRecurring: false,
   },
   {
     id: "c2", memberId: "m1", customerId: "cust2", productId: "p2",
     status: "active", contractDate: "2026-01-01",
-    monthlyAmount: 80000, grossProfit: 30000,
+    initialAmount: 0, monthlyAmount: 80000, grossProfit: 30000,
     isCrossSell: false, isRecurring: true,
   },
   {
     id: "c3", memberId: "m2", customerId: "cust1", productId: "p3",
     status: "active", contractDate: "2026-03-10",
-    monthlyAmount: 50000, grossProfit: 120000,
+    initialAmount: 0, monthlyAmount: 50000, grossProfit: 120000,
     isCrossSell: true, isRecurring: false,
   },
 ];

@@ -83,7 +83,7 @@ export async function GET(request: Request) {
         (c) => c.memberId === member.id
       );
       const totalSales = memberContracts.reduce(
-        (s, c) => s + Number(c.monthlyAmount),
+        (s, c) => s + Number(c.initialAmount) + Number(c.monthlyAmount),
         0
       );
       const totalProfit = memberContracts.reduce(

@@ -108,6 +108,9 @@ export const contracts = pgTable("contracts", {
     .notNull(),
   status: contractStatusEnum("status").default("active").notNull(),
   contractDate: date("contract_date").notNull(),
+  initialAmount: numeric("initial_amount", { precision: 12, scale: 2 })
+    .default("0")
+    .notNull(),
   monthlyAmount: numeric("monthly_amount", { precision: 12, scale: 2 })
     .default("0")
     .notNull(),

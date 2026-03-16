@@ -34,6 +34,7 @@ export const contractSchema = z.object({
   productId: z.string().uuid("商品を選択してください"),
   status: z.enum(["active", "cancelled", "pending"]),
   contractDate: z.string().min(1, "契約日は必須です"),
+  initialAmount: z.coerce.number().min(0),
   monthlyAmount: z.coerce.number().min(0),
   grossProfit: z.coerce.number().min(0),
   isCrossSell: z.boolean(),
@@ -83,6 +84,7 @@ export type ContractForCalc = {
   productId: string;
   status: "active" | "cancelled" | "pending";
   contractDate: string;
+  initialAmount: number;
   monthlyAmount: number;
   grossProfit: number;
   isCrossSell: boolean;

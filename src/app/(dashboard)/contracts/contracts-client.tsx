@@ -42,6 +42,7 @@ type Contract = {
   productId: string;
   status: "active" | "cancelled" | "pending";
   contractDate: string;
+  initialAmount: string;
   monthlyAmount: string;
   grossProfit: string;
   isCrossSell: boolean;
@@ -214,7 +215,16 @@ export function ContractsClient({
                   required
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>初期費用</Label>
+                  <Input
+                    name="initialAmount"
+                    type="number"
+                    defaultValue={editing?.initialAmount ?? "0"}
+                    required
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label>月額</Label>
                   <Input
@@ -268,6 +278,7 @@ export function ContractsClient({
             <TableHead>担当者</TableHead>
             <TableHead>顧客</TableHead>
             <TableHead>商品</TableHead>
+            <TableHead>初期費用</TableHead>
             <TableHead>月額</TableHead>
             <TableHead>粗利</TableHead>
             <TableHead>状態</TableHead>
@@ -282,6 +293,9 @@ export function ContractsClient({
               <TableCell>{c.member.name}</TableCell>
               <TableCell>{c.customer.name}</TableCell>
               <TableCell>{c.product.name}</TableCell>
+              <TableCell>
+                {Number(c.initialAmount).toLocaleString()}円
+              </TableCell>
               <TableCell>
                 {Number(c.monthlyAmount).toLocaleString()}円
               </TableCell>
@@ -325,7 +339,7 @@ export function ContractsClient({
           ))}
           {contracts.length === 0 && (
             <TableRow>
-              <TableCell colSpan={9} className="text-center text-muted-foreground">
+              <TableCell colSpan={10} className="text-center text-muted-foreground">
                 契約がありません
               </TableCell>
             </TableRow>
