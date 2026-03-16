@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   createCommissionRule,
+  updateCommissionRule,
   deleteCommissionRule,
 } from "@/actions/commission-rules";
 import { upsertCompanyProfit } from "@/actions/company-profit";
@@ -32,7 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
 type Rule = {
@@ -62,6 +63,100 @@ const typeLabels: Record<string, string> = {
   company_profit: "会社利益",
 };
 
+function RuleForm({
+  rule,
+  onSubmit,
+  onCancel,
+  submitLabel,
+}: {
+  rule?: Rule;
+  onSubmit: (formData: FormData) => Promise<void>;
+  onCancel: () => void;
+  submitLabel: string;
+}) {
+  return (
+    <form action={onSubmit} className="space-y-4">
+      <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label>タイトル</Label>
+          <Input
+            name="title"
+            placeholder="ルール名"
+            defaultValue={rule?.title ?? ""}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>タイプ</Label>
+          <Select name="type" defaultValue={rule?.type ?? "gross_profit"}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="gross_profit">粗利歩合</SelectItem>
+              <SelectItem value="stock">ストック歩合</SelectItem>
+              <SelectItem value="cross_sell">クロスセル</SelectItem>
+              <SelectItem value="company_profit">会社利益</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="grid grid-cols-4 gap-4">
+        <div className="space-y-2">
+          <Label>レート</Label>
+          <Input
+            name="rate"
+            type="number"
+            step="0.0001"
+            placeholder="0.10"
+            defaultValue={rule ? rule.rate : ""}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>ティア下限</Label>
+          <Input
+            name="tierMin"
+            type="number"
+            defaultValue={rule ? rule.tierMin : "0"}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>ティア上限</Label>
+          <Input
+            name="tierMax"
+            type="number"
+            placeholder="上限なし"
+            defaultValue={rule?.tierMax ?? ""}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>固定ボーナス</Label>
+          <Input
+            name="flatBonus"
+            type="number"
+            defaultValue={rule ? rule.flatBonus : "0"}
+            required
+          />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label>説明</Label>
+        <Input
+          name="description"
+          defaultValue={rule?.description ?? ""}
+        />
+      </div>
+      <div className="flex gap-2">
+        <Button type="submit">{submitLabel}</Button>
+        <Button type="button" variant="outline" onClick={onCancel}>
+          キャンセル
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 export function SettingsClient({
   rules,
   profits,
@@ -70,12 +165,24 @@ export function SettingsClient({
   profits: Profit[];
 }) {
   const [ruleOpen, setRuleOpen] = useState(false);
+  const [editingRule, setEditingRule] = useState<Rule | null>(null);
 
   async function handleAddRule(formData: FormData) {
     try {
       await createCommissionRule(formData);
       toast.success("ルールを追加しました");
       setRuleOpen(false);
+    } catch {
+      toast.error("エラーが発生しました");
+    }
+  }
+
+  async function handleEditRule(formData: FormData) {
+    if (!editingRule) return;
+    try {
+      await updateCommissionRule(editingRule.id, formData);
+      toast.success("ルールを更新しました");
+      setEditingRule(null);
     } catch {
       toast.error("エラーが発生しました");
     }
@@ -113,90 +220,39 @@ export function SettingsClient({
         </TabsList>
 
         <TabsContent value="rules" className="space-y-4">
-          {!ruleOpen ? (
+          {!ruleOpen && !editingRule ? (
             <Button onClick={() => setRuleOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               ルール追加
             </Button>
-          ) : (
+          ) : ruleOpen ? (
             <Card>
               <CardHeader>
                 <CardTitle>新規ルール</CardTitle>
               </CardHeader>
               <CardContent>
-                <form action={handleAddRule} className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>タイトル</Label>
-                      <Input name="title" placeholder="ルール名" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>タイプ</Label>
-                      <Select name="type" defaultValue="gross_profit">
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="gross_profit">粗利歩合</SelectItem>
-                          <SelectItem value="stock">ストック歩合</SelectItem>
-                          <SelectItem value="cross_sell">クロスセル</SelectItem>
-                          <SelectItem value="company_profit">会社利益</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-4 gap-4">
-                    <div className="space-y-2">
-                      <Label>レート</Label>
-                      <Input
-                        name="rate"
-                        type="number"
-                        step="0.0001"
-                        placeholder="0.10"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>ティア下限</Label>
-                      <Input
-                        name="tierMin"
-                        type="number"
-                        defaultValue="0"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>ティア上限</Label>
-                      <Input name="tierMax" type="number" placeholder="上限なし" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>固定ボーナス</Label>
-                      <Input
-                        name="flatBonus"
-                        type="number"
-                        defaultValue="0"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>説明</Label>
-                    <Input name="description" />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button type="submit">追加</Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setRuleOpen(false)}
-                    >
-                      キャンセル
-                    </Button>
-                  </div>
-                </form>
+                <RuleForm
+                  onSubmit={handleAddRule}
+                  onCancel={() => setRuleOpen(false)}
+                  submitLabel="追加"
+                />
               </CardContent>
             </Card>
-          )}
+          ) : editingRule ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>ルール編集</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RuleForm
+                  rule={editingRule}
+                  onSubmit={handleEditRule}
+                  onCancel={() => setEditingRule(null)}
+                  submitLabel="更新"
+                />
+              </CardContent>
+            </Card>
+          ) : null}
 
           <Table>
             <TableHeader>
@@ -207,7 +263,7 @@ export function SettingsClient({
                 <TableHead>レート</TableHead>
                 <TableHead>固定ボーナス</TableHead>
                 <TableHead>説明</TableHead>
-                <TableHead className="w-[60px]">操作</TableHead>
+                <TableHead className="w-[100px]">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -233,13 +289,25 @@ export function SettingsClient({
                   </TableCell>
                   <TableCell>{rule.description ?? "-"}</TableCell>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteRule(rule.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setEditingRule(rule);
+                          setRuleOpen(false);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteRule(rule.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
