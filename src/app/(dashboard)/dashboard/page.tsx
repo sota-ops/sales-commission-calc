@@ -32,11 +32,11 @@ type DashboardStats = {
 };
 
 const COLORS = [
-  "hsl(var(--chart-1))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
-  "hsl(var(--chart-5))",
+  "#1B96FF",
+  "#9B59B6",
+  "#06A59A",
+  "#0176D3",
+  "#032D60",
 ];
 
 function formatCurrency(value: number): string {
@@ -46,6 +46,13 @@ function formatCurrency(value: number): string {
     maximumFractionDigits: 0,
   }).format(value);
 }
+
+const STAT_STYLES = [
+  { gradient: "from-[#0176D3] to-[#1B96FF]", glow: "glow-blue" },
+  { gradient: "from-[#9B59B6] to-[#C39BD3]", glow: "glow-purple" },
+  { gradient: "from-[#06A59A] to-[#48C9B0]", glow: "glow-teal" },
+  { gradient: "from-[#0176D3] to-[#9B59B6]", glow: "glow-blue" },
+];
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
@@ -99,46 +106,68 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">ダッシュボード</h2>
+      <h2 className="text-2xl font-bold text-gradient-sf">ダッシュボード</h2>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {statCards.map((stat) => (
-          <Card key={stat.title}>
+        {statCards.map((stat, index) => (
+          <Card
+            key={stat.title}
+            className="group relative overflow-hidden rounded-2xl border-border/30 glass-card transition-all duration-300 hover:border-[#0176D3]/30 hover:glow-blue-sm"
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 {stat.title}
               </CardTitle>
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
+              <div
+                className={`flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${STAT_STYLES[index].gradient} transition-shadow duration-300 group-hover:${STAT_STYLES[index].glow}`}
+              >
+                <stat.icon className="h-4 w-4 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
                 {stat.format(stat.value)}
               </div>
             </CardContent>
+            {/* Subtle gradient accent at bottom */}
+            <div className={`absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r ${STAT_STYLES[index].gradient} opacity-0 transition-opacity duration-300 group-hover:opacity-100`} />
           </Card>
         ))}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+        <Card className="rounded-2xl border-border/30 glass-card">
           <CardHeader>
-            <CardTitle>月別報酬推移</CardTitle>
+            <CardTitle className="text-gradient-sf">月別報酬推移</CardTitle>
             <CardDescription>過去6ヶ月の報酬合計</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px]">
             {stats.monthlyTrend.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats.monthlyTrend}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis tickFormatter={(v) => `${(v / 10000).toFixed(0)}万`} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                  <XAxis dataKey="month" stroke="rgba(255,255,255,0.4)" tick={{ fill: "rgba(255,255,255,0.5)" }} />
+                  <YAxis tickFormatter={(v) => `${(v / 10000).toFixed(0)}万`} stroke="rgba(255,255,255,0.4)" tick={{ fill: "rgba(255,255,255,0.5)" }} />
                   <Tooltip
                     formatter={(value) => [
                       formatCurrency(Number(value)),
                       "合計",
                     ]}
+                    contentStyle={{
+                      backgroundColor: "rgba(3, 45, 96, 0.9)",
+                      border: "1px solid rgba(27, 150, 255, 0.3)",
+                      borderRadius: "12px",
+                      backdropFilter: "blur(12px)",
+                      color: "#fff",
+                    }}
                   />
-                  <Bar dataKey="total" fill="hsl(var(--chart-1))" />
+                  <Bar dataKey="total" fill="url(#barGradient)" radius={[6, 6, 0, 0]} />
+                  <defs>
+                    <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#1B96FF" />
+                      <stop offset="100%" stopColor="#0176D3" />
+                    </linearGradient>
+                  </defs>
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -149,9 +178,9 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-2xl border-border/30 glass-card">
           <CardHeader>
-            <CardTitle>報酬内訳</CardTitle>
+            <CardTitle className="text-gradient-sf">報酬内訳</CardTitle>
             <CardDescription>カテゴリ別の報酬配分</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px]">
@@ -169,6 +198,8 @@ export default function DashboardPage() {
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
+                    stroke="rgba(0,0,0,0.2)"
+                    strokeWidth={2}
                   >
                     {stats.commissionBreakdown.map((_, index) => (
                       <Cell
@@ -179,6 +210,13 @@ export default function DashboardPage() {
                   </Pie>
                   <Tooltip
                     formatter={(value) => [formatCurrency(Number(value))]}
+                    contentStyle={{
+                      backgroundColor: "rgba(3, 45, 96, 0.9)",
+                      border: "1px solid rgba(27, 150, 255, 0.3)",
+                      borderRadius: "12px",
+                      backdropFilter: "blur(12px)",
+                      color: "#fff",
+                    }}
                   />
                 </PieChart>
               </ResponsiveContainer>
