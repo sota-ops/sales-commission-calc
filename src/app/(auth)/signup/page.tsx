@@ -16,11 +16,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -33,24 +35,57 @@ export default function LoginPage() {
     });
   }
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError("");
 
-    const { error } = await supabase.auth.signInWithPassword({
+    if (password !== confirmPassword) {
+      setError("パスワードが一致しません");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("パスワードは6文字以上で入力してください");
+      return;
+    }
+
+    setLoading(true);
+
+    const { error } = await supabase.auth.signUp({
       email,
       password,
     });
 
     if (error) {
-      setError("メールアドレスまたはパスワードが正しくありません");
+      setError(error.message);
       setLoading(false);
       return;
     }
 
-    router.push("/dashboard");
-    router.refresh();
+    setSuccess(true);
+    setLoading(false);
+  }
+
+  if (success) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-2xl">登録完了</CardTitle>
+            <CardDescription>
+              確認メールを送信しました。メール内のリンクをクリックして登録を完了してください。
+            </CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Link href="/login" className="w-full">
+              <Button variant="outline" className="w-full">
+                ログインページへ
+              </Button>
+            </Link>
+          </CardFooter>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -58,9 +93,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl">営業報酬計算システム</CardTitle>
-          <CardDescription>
-            ログインしてダッシュボードにアクセス
-          </CardDescription>
+          <CardDescription>新規アカウント登録</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Button
@@ -87,7 +120,7 @@ export default function LoginPage() {
                 fill="#EA4335"
               />
             </svg>
-            Googleでログイン
+            Googleで登録
           </Button>
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
@@ -97,7 +130,7 @@ export default function LoginPage() {
               <span className="bg-card px-2 text-muted-foreground">または</span>
             </div>
           </div>
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleSignup} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">メールアドレス</Label>
               <Input
@@ -118,17 +151,27 @@ export default function LoginPage() {
                 required
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">パスワード（確認）</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "ログイン中..." : "ログイン"}
+              {loading ? "登録中..." : "登録"}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="justify-center">
           <p className="text-sm text-muted-foreground">
-            アカウントをお持ちでない方は{" "}
-            <Link href="/signup" className="underline">
-              新規登録
+            アカウントをお持ちの方は{" "}
+            <Link href="/login" className="underline">
+              ログイン
             </Link>
           </p>
         </CardFooter>
