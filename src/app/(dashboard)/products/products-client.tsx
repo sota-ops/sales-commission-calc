@@ -10,6 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
   Table,
   TableBody,
   TableCell,
@@ -17,13 +23,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -45,20 +44,99 @@ type Product = {
   isRecurring: boolean;
 };
 
+function ProductForm({
+  product,
+  onSubmit,
+  onCancel,
+  submitLabel,
+}: {
+  product?: Product;
+  onSubmit: (formData: FormData) => Promise<void>;
+  onCancel: () => void;
+  submitLabel: string;
+}) {
+  return (
+    <form action={onSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label>商品名</Label>
+        <Input
+          name="name"
+          defaultValue={product?.name}
+          required
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>カテゴリ</Label>
+        <Input
+          name="category"
+          defaultValue={product?.category}
+          required
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>初期費用</Label>
+          <Input
+            name="initialPrice"
+            type="number"
+            defaultValue={product?.initialPrice ?? "0"}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>月額</Label>
+          <Input
+            name="monthlyPrice"
+            type="number"
+            defaultValue={product?.monthlyPrice ?? "0"}
+            required
+          />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label>課金形態</Label>
+        <Select
+          name="isRecurring"
+          defaultValue={product?.isRecurring ? "true" : "false"}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="false">一括</SelectItem>
+            <SelectItem value="true">ストック（継続課金）</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex gap-2">
+        <Button type="submit">{submitLabel}</Button>
+        <Button type="button" variant="outline" onClick={onCancel}>
+          キャンセル
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 export function ProductsClient({ products }: { products: Product[] }) {
-  const [open, setOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  async function handleSubmit(formData: FormData) {
+  async function handleCreate(formData: FormData) {
     try {
-      if (editingId) {
-        await updateProduct(editingId, formData);
-        toast.success("商品を更新しました");
-      } else {
-        await createProduct(formData);
-        toast.success("商品を追加しました");
-      }
-      setOpen(false);
+      await createProduct(formData);
+      toast.success("商品を追加しました");
+      setFormOpen(false);
+    } catch {
+      toast.error("エラーが発生しました");
+    }
+  }
+
+  async function handleUpdate(formData: FormData) {
+    if (!editingId) return;
+    try {
+      await updateProduct(editingId, formData);
+      toast.success("商品を更新しました");
       setEditingId(null);
     } catch {
       toast.error("エラーが発生しました");
@@ -77,94 +155,50 @@ export function ProductsClient({ products }: { products: Product[] }) {
 
   const editingProduct = editingId
     ? products.find((p) => p.id === editingId)
-    : null;
+    : undefined;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">商品管理</h2>
-        <Dialog
-          open={open}
-          onOpenChange={(v) => {
-            setOpen(v);
-            if (!v) setEditingId(null);
-          }}
-        >
-          <DialogTrigger render={<Button />}>
+        {!formOpen && !editingId && (
+          <Button onClick={() => setFormOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             追加
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {editingId ? "商品編集" : "商品追加"}
-              </DialogTitle>
-            </DialogHeader>
-            <form action={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">商品名</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  defaultValue={editingProduct?.name}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">カテゴリ</Label>
-                <Input
-                  id="category"
-                  name="category"
-                  defaultValue={editingProduct?.category}
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="initialPrice">初期費用</Label>
-                  <Input
-                    id="initialPrice"
-                    name="initialPrice"
-                    type="number"
-                    defaultValue={editingProduct?.initialPrice ?? "0"}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="monthlyPrice">月額</Label>
-                  <Input
-                    id="monthlyPrice"
-                    name="monthlyPrice"
-                    type="number"
-                    defaultValue={editingProduct?.monthlyPrice ?? "0"}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="isRecurring">課金形態</Label>
-                <Select
-                  name="isRecurring"
-                  defaultValue={
-                    editingProduct?.isRecurring ? "true" : "false"
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="false">一括</SelectItem>
-                    <SelectItem value="true">ストック（継続課金）</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button type="submit" className="w-full">
-                {editingId ? "更新" : "追加"}
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+          </Button>
+        )}
       </div>
+
+      {formOpen && (
+        <Card>
+          <CardHeader>
+            <CardTitle>商品追加</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ProductForm
+              onSubmit={handleCreate}
+              onCancel={() => setFormOpen(false)}
+              submitLabel="追加"
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {editingId && editingProduct && (
+        <Card>
+          <CardHeader>
+            <CardTitle>商品編集</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ProductForm
+              product={editingProduct}
+              onSubmit={handleUpdate}
+              onCancel={() => setEditingId(null)}
+              submitLabel="更新"
+            />
+          </CardContent>
+        </Card>
+      )}
 
       <Table>
         <TableHeader>
@@ -200,7 +234,7 @@ export function ProductsClient({ products }: { products: Product[] }) {
                     size="icon"
                     onClick={() => {
                       setEditingId(product.id);
-                      setOpen(true);
+                      setFormOpen(false);
                     }}
                   >
                     <Pencil className="h-4 w-4" />
