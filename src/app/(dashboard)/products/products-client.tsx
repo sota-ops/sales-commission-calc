@@ -39,6 +39,8 @@ type Product = {
   id: string;
   name: string;
   category: string;
+  initialPrice: string;
+  monthlyPrice: string;
   unitPrice: string;
   isRecurring: boolean;
 };
@@ -117,15 +119,27 @@ export function ProductsClient({ products }: { products: Product[] }) {
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="unitPrice">単価</Label>
-                <Input
-                  id="unitPrice"
-                  name="unitPrice"
-                  type="number"
-                  defaultValue={editingProduct?.unitPrice ?? "0"}
-                  required
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="initialPrice">初期費用</Label>
+                  <Input
+                    id="initialPrice"
+                    name="initialPrice"
+                    type="number"
+                    defaultValue={editingProduct?.initialPrice ?? "0"}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="monthlyPrice">月額</Label>
+                  <Input
+                    id="monthlyPrice"
+                    name="monthlyPrice"
+                    type="number"
+                    defaultValue={editingProduct?.monthlyPrice ?? "0"}
+                    required
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="isRecurring">課金形態</Label>
@@ -157,7 +171,8 @@ export function ProductsClient({ products }: { products: Product[] }) {
           <TableRow>
             <TableHead>商品名</TableHead>
             <TableHead>カテゴリ</TableHead>
-            <TableHead>単価</TableHead>
+            <TableHead className="text-right">初期費用</TableHead>
+            <TableHead className="text-right">月額</TableHead>
             <TableHead>課金形態</TableHead>
             <TableHead className="w-[100px]">操作</TableHead>
           </TableRow>
@@ -167,8 +182,11 @@ export function ProductsClient({ products }: { products: Product[] }) {
             <TableRow key={product.id}>
               <TableCell className="font-medium">{product.name}</TableCell>
               <TableCell>{product.category}</TableCell>
-              <TableCell>
-                {Number(product.unitPrice).toLocaleString()}円
+              <TableCell className="text-right">
+                {Number(product.initialPrice).toLocaleString()}円
+              </TableCell>
+              <TableCell className="text-right">
+                {Number(product.monthlyPrice).toLocaleString()}円
               </TableCell>
               <TableCell>
                 <Badge variant={product.isRecurring ? "default" : "secondary"}>
@@ -200,7 +218,7 @@ export function ProductsClient({ products }: { products: Product[] }) {
           ))}
           {products.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground">
+              <TableCell colSpan={6} className="text-center text-muted-foreground">
                 商品がありません
               </TableCell>
             </TableRow>

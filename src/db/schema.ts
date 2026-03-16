@@ -76,6 +76,12 @@ export const products = pgTable("products", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
   category: text("category").notNull(),
+  initialPrice: numeric("initial_price", { precision: 12, scale: 2 })
+    .default("0")
+    .notNull(),
+  monthlyPrice: numeric("monthly_price", { precision: 12, scale: 2 })
+    .default("0")
+    .notNull(),
   unitPrice: numeric("unit_price", { precision: 12, scale: 2 })
     .default("0")
     .notNull(),

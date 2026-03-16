@@ -23,7 +23,8 @@ export const customerSchema = z.object({
 export const productSchema = z.object({
   name: z.string().min(1, "商品名は必須です"),
   category: z.string().min(1, "カテゴリは必須です"),
-  unitPrice: z.coerce.number().min(0),
+  initialPrice: z.coerce.number().min(0),
+  monthlyPrice: z.coerce.number().min(0),
   isRecurring: z.boolean(),
 });
 

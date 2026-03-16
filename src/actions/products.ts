@@ -26,7 +26,9 @@ export async function createProduct(formData: FormData) {
   await db.insert(products).values({
     name: parsed.name,
     category: parsed.category,
-    unitPrice: String(parsed.unitPrice),
+    initialPrice: String(parsed.initialPrice),
+    monthlyPrice: String(parsed.monthlyPrice),
+    unitPrice: String(parsed.initialPrice + parsed.monthlyPrice),
     isRecurring: parsed.isRecurring,
   });
 
@@ -45,7 +47,9 @@ export async function updateProduct(id: string, formData: FormData) {
     .set({
       name: parsed.name,
       category: parsed.category,
-      unitPrice: String(parsed.unitPrice),
+      initialPrice: String(parsed.initialPrice),
+      monthlyPrice: String(parsed.monthlyPrice),
+      unitPrice: String(parsed.initialPrice + parsed.monthlyPrice),
       isRecurring: parsed.isRecurring,
       updatedAt: new Date(),
     })
