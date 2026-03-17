@@ -14,11 +14,11 @@ export default async function DashboardLayout({
     <SidebarProvider>
       <AppSidebar />
       <main className="flex-1 overflow-auto">
-        <div className="flex items-center justify-between border-b border-border/50 px-6 py-3 glass">
-          <SidebarTrigger className="text-muted-foreground transition-colors hover:text-[#1B96FF]" />
+        <div className="flex items-center justify-between border-b bg-card px-6 py-3">
+          <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
           {user && <UserMenu email={user.email ?? ""} />}
         </div>
-        <div className="p-6 gradient-mesh min-h-[calc(100vh-57px)]">
+        <div className="p-6 min-h-[calc(100vh-57px)] bg-muted/30">
           {children}
         </div>
       </main>

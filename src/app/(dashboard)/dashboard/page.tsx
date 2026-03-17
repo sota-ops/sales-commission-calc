@@ -45,11 +45,11 @@ type DashboardStats = {
 };
 
 const COLORS = [
-  "#1B96FF",
-  "#9B59B6",
-  "#06A59A",
-  "#0176D3",
-  "#032D60",
+  "oklch(0.55 0.15 250)",
+  "oklch(0.6 0.12 170)",
+  "oklch(0.55 0.14 30)",
+  "oklch(0.6 0.1 290)",
+  "oklch(0.55 0.1 60)",
 ];
 
 function getCurrentYearMonth(): string {
@@ -65,12 +65,7 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-const STAT_STYLES = [
-  { gradient: "from-[#0176D3] to-[#1B96FF]", glow: "glow-blue" },
-  { gradient: "from-[#9B59B6] to-[#C39BD3]", glow: "glow-purple" },
-  { gradient: "from-[#06A59A] to-[#48C9B0]", glow: "glow-teal" },
-  { gradient: "from-[#0176D3] to-[#9B59B6]", glow: "glow-blue" },
-];
+const STAT_ICONS = [Users, FileText, Calculator, TrendingUp];
 
 const emptyStats: DashboardStats = {
   memberCount: 0,
@@ -139,7 +134,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gradient-sf">ダッシュボード</h2>
+        <h2 className="text-2xl font-bold">ダッシュボード</h2>
 
         {/* Month Range Selector */}
         <div className="flex items-center gap-2">
@@ -151,7 +146,7 @@ export default function DashboardPage() {
               setFromMonth(e.target.value);
               if (e.target.value > toMonth) setToMonth(e.target.value);
             }}
-            className="w-[160px] rounded-xl border-border/50 bg-card/50 backdrop-blur-sm"
+            className="w-[160px]"
           />
           <span className="text-sm text-muted-foreground">〜</span>
           <Input
@@ -161,7 +156,7 @@ export default function DashboardPage() {
               setToMonth(e.target.value);
               if (e.target.value < fromMonth) setFromMonth(e.target.value);
             }}
-            className="w-[160px] rounded-xl border-border/50 bg-card/50 backdrop-blur-sm"
+            className="w-[160px]"
           />
         </div>
       </div>
@@ -169,19 +164,14 @@ export default function DashboardPage() {
       {/* Loading overlay */}
       <div className={`transition-opacity duration-200 ${loading ? "opacity-50" : "opacity-100"}`}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {statCards.map((stat, index) => (
-            <Card
-              key={stat.title}
-              className="group relative overflow-hidden rounded-2xl border-border/30 glass-card transition-all duration-300 hover:border-[#0176D3]/30 hover:glow-blue-sm"
-            >
+          {statCards.map((stat) => (
+            <Card key={stat.title}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   {stat.title}
                 </CardTitle>
-                <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${STAT_STYLES[index].gradient} transition-shadow duration-300 group-hover:${STAT_STYLES[index].glow}`}
-                >
-                  <stat.icon className="h-4 w-4 text-white" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                  <stat.icon className="h-4 w-4 text-primary" />
                 </div>
               </CardHeader>
               <CardContent>
@@ -189,16 +179,15 @@ export default function DashboardPage() {
                   {stat.format(stat.value)}
                 </div>
               </CardContent>
-              <div className={`absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r ${STAT_STYLES[index].gradient} opacity-0 transition-opacity duration-300 group-hover:opacity-100`} />
             </Card>
           ))}
         </div>
 
         {/* Member Ranking Table */}
-        <Card className="mt-4 rounded-2xl border-border/30 glass-card">
+        <Card className="mt-4">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gradient-sf">
-              <Trophy className="h-5 w-5 text-[#1B96FF]" />
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-primary" />
               個人別ランキング
             </CardTitle>
             <CardDescription>
@@ -210,7 +199,7 @@ export default function DashboardPage() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-border/30">
+                    <tr className="border-b">
                       <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">順位</th>
                       <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">名前</th>
                       <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">売上</th>
@@ -223,14 +212,14 @@ export default function DashboardPage() {
                     {stats.memberRanking.map((member, index) => (
                       <tr
                         key={member.id}
-                        className="border-b border-border/20 transition-colors hover:bg-[#0176D3]/5"
+                        className="border-b last:border-0 transition-colors hover:bg-muted/50"
                       >
                         <td className="px-3 py-3">
                           <div className="flex items-center gap-1.5">
                             {index === 0 ? (
-                              <Crown className="h-5 w-5 text-yellow-400" />
+                              <Crown className="h-5 w-5 text-yellow-500" />
                             ) : index === 1 ? (
-                              <Medal className="h-5 w-5 text-gray-300" />
+                              <Medal className="h-5 w-5 text-gray-400" />
                             ) : index === 2 ? (
                               <Medal className="h-5 w-5 text-amber-600" />
                             ) : (
@@ -245,15 +234,15 @@ export default function DashboardPage() {
                           <span className="text-sm">{formatCurrency(member.totalSales)}</span>
                         </td>
                         <td className="px-3 py-3 text-right">
-                          <span className="text-sm text-[#06A59A]">{formatCurrency(member.totalProfit)}</span>
+                          <span className="text-sm text-emerald-600">{formatCurrency(member.totalProfit)}</span>
                         </td>
                         <td className="px-3 py-3 text-center">
-                          <span className="inline-flex h-7 min-w-[2rem] items-center justify-center rounded-full bg-[#0176D3]/10 px-2 text-sm font-medium text-[#1B96FF]">
+                          <span className="inline-flex h-7 min-w-[2rem] items-center justify-center rounded-full bg-primary/10 px-2 text-sm font-medium text-primary">
                             {member.contractCount}
                           </span>
                         </td>
                         <td className="px-3 py-3 text-right">
-                          <span className="font-semibold text-[#1B96FF]">{formatCurrency(member.commission)}</span>
+                          <span className="font-semibold text-primary">{formatCurrency(member.commission)}</span>
                         </td>
                       </tr>
                     ))}
@@ -269,9 +258,9 @@ export default function DashboardPage() {
         </Card>
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <Card className="rounded-2xl border-border/30 glass-card">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-gradient-sf">月別報酬推移</CardTitle>
+              <CardTitle>月別報酬推移</CardTitle>
               <CardDescription>
                 {fromMonth === toMonth ? fromMonth : `${fromMonth} 〜 ${toMonth}`} の月別推移
               </CardDescription>
@@ -280,29 +269,22 @@ export default function DashboardPage() {
               {stats.monthlyTrend.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={stats.monthlyTrend}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                    <XAxis dataKey="month" stroke="rgba(255,255,255,0.4)" tick={{ fill: "rgba(255,255,255,0.5)" }} />
-                    <YAxis tickFormatter={(v) => `${(v / 10000).toFixed(0)}万`} stroke="rgba(255,255,255,0.4)" tick={{ fill: "rgba(255,255,255,0.5)" }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis dataKey="month" stroke="#9ca3af" tick={{ fill: "#6b7280" }} />
+                    <YAxis tickFormatter={(v) => `${(v / 10000).toFixed(0)}万`} stroke="#9ca3af" tick={{ fill: "#6b7280" }} />
                     <Tooltip
                       formatter={(value) => [
                         formatCurrency(Number(value)),
                         "合計",
                       ]}
                       contentStyle={{
-                        backgroundColor: "rgba(3, 45, 96, 0.9)",
-                        border: "1px solid rgba(27, 150, 255, 0.3)",
-                        borderRadius: "12px",
-                        backdropFilter: "blur(12px)",
-                        color: "#fff",
+                        backgroundColor: "#fff",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "8px",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
                       }}
                     />
-                    <Bar dataKey="total" fill="url(#barGradient)" radius={[6, 6, 0, 0]} />
-                    <defs>
-                      <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#1B96FF" />
-                        <stop offset="100%" stopColor="#0176D3" />
-                      </linearGradient>
-                    </defs>
+                    <Bar dataKey="total" fill="oklch(0.55 0.15 250)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -313,9 +295,9 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-2xl border-border/30 glass-card">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-gradient-sf">報酬内訳</CardTitle>
+              <CardTitle>報酬内訳</CardTitle>
               <CardDescription>
                 {fromMonth === toMonth ? fromMonth : `${fromMonth} 〜 ${toMonth}`} のカテゴリ別報酬配分
               </CardDescription>
@@ -335,7 +317,7 @@ export default function DashboardPage() {
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
-                      stroke="rgba(0,0,0,0.2)"
+                      stroke="#fff"
                       strokeWidth={2}
                     >
                       {stats.commissionBreakdown.map((_, index) => (
@@ -348,11 +330,10 @@ export default function DashboardPage() {
                     <Tooltip
                       formatter={(value) => [formatCurrency(Number(value))]}
                       contentStyle={{
-                        backgroundColor: "rgba(3, 45, 96, 0.9)",
-                        border: "1px solid rgba(27, 150, 255, 0.3)",
-                        borderRadius: "12px",
-                        backdropFilter: "blur(12px)",
-                        color: "#fff",
+                        backgroundColor: "#fff",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "8px",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
                       }}
                     />
                   </PieChart>
