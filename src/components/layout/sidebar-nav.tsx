@@ -23,16 +23,23 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { useHasPermission } from "@/components/providers/auth-provider";
+import type { Resource } from "@/lib/auth/types";
 
-const navItems = [
-  { title: "ダッシュボード", href: "/dashboard", icon: LayoutDashboard },
-  { title: "メンバー", href: "/members", icon: Users },
-  { title: "チーム", href: "/teams", icon: Building2 },
-  { title: "商品", href: "/products", icon: Package },
-  { title: "顧客", href: "/customers", icon: Handshake },
-  { title: "契約", href: "/contracts", icon: FileText },
-  { title: "報酬計算", href: "/commissions", icon: Calculator },
-  { title: "設定", href: "/settings", icon: Settings },
+const navItems: {
+  title: string;
+  href: string;
+  icon: typeof LayoutDashboard;
+  resource: Resource;
+}[] = [
+  { title: "ダッシュボード", href: "/dashboard", icon: LayoutDashboard, resource: "dashboard" },
+  { title: "メンバー", href: "/members", icon: Users, resource: "members" },
+  { title: "チーム", href: "/teams", icon: Building2, resource: "teams" },
+  { title: "商品", href: "/products", icon: Package, resource: "products" },
+  { title: "顧客", href: "/customers", icon: Handshake, resource: "customers" },
+  { title: "契約", href: "/contracts", icon: FileText, resource: "contracts" },
+  { title: "報酬計算", href: "/commissions", icon: Calculator, resource: "commissions" },
+  { title: "設定", href: "/settings", icon: Settings, resource: "settings" },
 ];
 
 export function AppSidebar() {
@@ -56,34 +63,52 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    render={<Link href={item.href} />}
-                    isActive={pathname === item.href}
-                    className={`group/btn relative rounded-md px-3 py-2.5 transition-colors ${
-                      pathname === item.href
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                    }`}
-                  >
-                    <item.icon
-                      className={`h-4 w-4 ${
-                        pathname === item.href
-                          ? "text-primary"
-                          : "text-muted-foreground group-hover/btn:text-foreground"
-                      }`}
-                    />
-                    <span>{item.title}</span>
-                    {pathname === item.href && (
-                      <span className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                <SidebarNavItem key={item.href} item={item} pathname={pathname} />
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
+  );
+}
+
+function SidebarNavItem({
+  item,
+  pathname,
+}: {
+  item: (typeof navItems)[number];
+  pathname: string;
+}) {
+  const hasView = useHasPermission(item.resource, "view");
+
+  // If no auth context (not linked yet), show all items
+  // If auth context exists, respect permissions
+  if (hasView === false) return null;
+
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        render={<Link href={item.href} />}
+        isActive={pathname === item.href}
+        className={`group/btn relative rounded-md px-3 py-2.5 transition-colors ${
+          pathname === item.href
+            ? "bg-primary/10 text-primary font-medium"
+            : "text-muted-foreground hover:bg-accent hover:text-foreground"
+        }`}
+      >
+        <item.icon
+          className={`h-4 w-4 ${
+            pathname === item.href
+              ? "text-primary"
+              : "text-muted-foreground group-hover/btn:text-foreground"
+          }`}
+        />
+        <span>{item.title}</span>
+        {pathname === item.href && (
+          <span className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
+        )}
+      </SidebarMenuButton>
+    </SidebarMenuItem>
   );
 }

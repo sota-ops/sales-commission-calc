@@ -44,6 +44,7 @@ export const salesMembers = pgTable("sales_members", {
   name: text("name").notNull(),
   email: text("email").notNull(),
   role: roleEnum("role").default("viewer").notNull(),
+  roleId: uuid("role_id"),
   teamId: uuid("team_id").references(() => teams.id),
   baseSalary: numeric("base_salary", { precision: 12, scale: 2 })
     .default("0")
