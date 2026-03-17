@@ -8,7 +8,7 @@ import {
 } from "@/actions/commission-rules";
 import { upsertCompanyProfit } from "@/actions/company-profit";
 import { createInvitation, cancelInvitation } from "@/actions/invitations";
-import { updateRolePermissions } from "@/actions/roles";
+import { createRole, deleteRole, updateRolePermissions } from "@/actions/roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -250,6 +250,7 @@ export function SettingsClient({
   const [editingRule, setEditingRule] = useState<Rule | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
+  const [roleFormOpen, setRoleFormOpen] = useState(false);
 
   async function handleAddRule(formData: FormData) {
     try {
@@ -309,6 +310,26 @@ export function SettingsClient({
       toast.success("招待をキャンセルしました");
     } catch {
       toast.error("エラーが発生しました");
+    }
+  }
+
+  async function handleCreateRole(formData: FormData) {
+    try {
+      await createRole(formData);
+      toast.success("ロールを追加しました");
+      setRoleFormOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "エラーが発生しました");
+    }
+  }
+
+  async function handleDeleteRole(roleId: string) {
+    if (!confirm("このロールを削除しますか？")) return;
+    try {
+      await deleteRole(roleId);
+      toast.success("ロールを削除しました");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "エラーが発生しました");
     }
   }
 
@@ -642,9 +663,50 @@ export function SettingsClient({
         {/* ロール管理 */}
         {canManageRoles && (
           <TabsContent value="roles" className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              各ロールの権限を設定できます。スコープは「全て」「自分のみ」「チームのみ」から選択できます。
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                各ロールの権限を設定できます。スコープは「全て」「自分のみ」「チームのみ」から選択できます。
+              </p>
+              {!roleFormOpen && (
+                <Button onClick={() => setRoleFormOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  ロール追加
+                </Button>
+              )}
+            </div>
+
+            {roleFormOpen && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>新規ロール</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form action={handleCreateRole} className="space-y-4">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>ロール名（内部ID）</Label>
+                        <Input name="name" required placeholder="例: leader" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>表示名</Label>
+                        <Input name="displayName" required placeholder="例: リーダー" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>説明</Label>
+                        <Input name="description" placeholder="例: チームリーダー向け権限" />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="submit">追加</Button>
+                      <Button type="button" variant="outline" onClick={() => setRoleFormOpen(false)}>
+                        キャンセル
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            )}
+
             {roles.map((role) => (
               <RolePermissionEditor
                 key={role.id}
@@ -652,6 +714,7 @@ export function SettingsClient({
                 isEditing={editingRoleId === role.id}
                 onStartEdit={() => setEditingRoleId(role.id)}
                 onStopEdit={() => setEditingRoleId(null)}
+                onDelete={() => handleDeleteRole(role.id)}
               />
             ))}
           </TabsContent>
@@ -666,11 +729,13 @@ function RolePermissionEditor({
   isEditing,
   onStartEdit,
   onStopEdit,
+  onDelete,
 }: {
   role: Role;
   isEditing: boolean;
   onStartEdit: () => void;
   onStopEdit: () => void;
+  onDelete: () => void;
 }) {
   const [perms, setPerms] = useState(role.permissions);
   const [saving, setSaving] = useState(false);
@@ -733,22 +798,32 @@ function RolePermissionEditor({
             </Badge>
           )}
         </CardTitle>
-        {!isEditing ? (
-          <Button variant="outline" size="sm" onClick={onStartEdit}>
-            <Pencil className="mr-1 h-3 w-3" />
-            編集
-          </Button>
-        ) : (
-          <div className="flex gap-2">
-            <Button size="sm" onClick={handleSave} disabled={saving}>
-              <Check className="mr-1 h-3 w-3" />
-              保存
-            </Button>
-            <Button variant="outline" size="sm" onClick={onStopEdit}>
-              キャンセル
-            </Button>
-          </div>
-        )}
+        <div className="flex gap-2">
+          {!isEditing ? (
+            <>
+              <Button variant="outline" size="sm" onClick={onStartEdit}>
+                <Pencil className="mr-1 h-3 w-3" />
+                編集
+              </Button>
+              {!role.isSystem && (
+                <Button variant="outline" size="sm" onClick={onDelete} className="text-destructive hover:text-destructive">
+                  <Trash2 className="mr-1 h-3 w-3" />
+                  削除
+                </Button>
+              )}
+            </>
+          ) : (
+            <>
+              <Button size="sm" onClick={handleSave} disabled={saving}>
+                <Check className="mr-1 h-3 w-3" />
+                保存
+              </Button>
+              <Button variant="outline" size="sm" onClick={onStopEdit}>
+                キャンセル
+              </Button>
+            </>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
